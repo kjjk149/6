@@ -1,0 +1,435 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crab Color Recognition</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        text-align: center;
+        margin: 0;
+        padding: 20px;
+    }
+
+    h2 {
+        margin-bottom: 10px;
+    }
+
+    .instructions {
+        font-size: 18px;
+        text-align: left;
+        max-width: 900px;
+        margin: 20px auto;
+        line-height: 1.8;
+    }
+
+    .container {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin: 20px auto;
+    }
+
+    .panel {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        overflow: hidden;
+        width: min(100%, 420px);
+        box-shadow: 0 2px 6px #0001;
+    }
+
+    .panel-title {
+        background: #10bd91;
+        color: white;
+        padding: 14px;
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    video {
+        width: 100%;
+        display: block;
+        background: #222;
+        min-height: 220px;
+        object-fit: cover;
+    }
+
+    .results {
+        padding: 15px;
+        text-align: left;
+    }
+
+    .result-row {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        align-items: center;
+        gap: 10px;
+        margin: 12px 0;
+    }
+
+    .bar {
+        height: 32px;
+        background: #eee;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .fill {
+        height: 100%;
+        width: 0%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        transition: width 0.2s;
+    }
+
+    #blackFill { background: #e85239; }
+    #redFill { background: #16a085; }
+
+    .ocean {
+        width: min(100%, 600px);
+        height: 460px;
+        position: relative;
+        overflow: hidden;
+        border-radius: 10px;
+        background:
+            radial-gradient(ellipse at 20% 20%, #27a8e8, transparent 40%),
+            linear-gradient(#0876ce 0%, #159ed1 55%, #26b9bd 100%);
+        border: 1px solid #b5d5e5;
+    }
+
+    .ocean::before {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        height: 35%;
+        width: 100%;
+        background: linear-gradient(transparent, #42c4c4);
+    }
+
+    .coral {
+        position: absolute;
+        right: 35px;
+        top: 20px;
+        color: #ff72b1;
+        font-size: 100px;
+    }
+
+    .seaweed {
+        position: absolute;
+        bottom: 35px;
+        left: 20px;
+        font-size: 60px;
+    }
+
+    .rock {
+        position: absolute;
+        bottom: 0;
+        right: 80px;
+        width: 130px;
+        height: 75px;
+        background: #3187bb;
+        border-radius: 45% 45% 0 0;
+    }
+
+    #crab {
+        position: absolute;
+        left: 50%;
+        top: 62%;
+        transform: translate(-50%, -50%);
+        width: 300px;
+        height: 210px;
+    }
+
+    #crab svg {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+    }
+
+    .crab-part {
+        fill: var(--crab-color, #ff0000);
+        stroke: #101010;
+        stroke-width: 3;
+        stroke-linejoin: round;
+    }
+
+    .eye {
+        fill: #050505;
+        stroke: white;
+        stroke-width: 1;
+    }
+
+    .mouth {
+        fill: none;
+        stroke: #111;
+        stroke-width: 3;
+        stroke-linecap: round;
+    }
+
+    button {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 7px;
+        margin: 5px;
+        color: white;
+        background: #087bc1;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    button:hover { opacity: 0.85; }
+
+    .status {
+        font-weight: bold;
+        padding: 12px;
+    }
+
+    @media (max-width: 500px) {
+        #crab {
+            width: 250px;
+            height: 180px;
+        }
+
+        .ocean { height: 380px; }
+    }
+</style>
+</head>
+
+<body>
+
+<h2>🦀 Crab Color Recognition</h2>
+
+<div class="instructions">
+    <div><b style="color:tomato">a.</b>
+        <b>Show a black surface</b> — the crab turns black
+        and blends into the rocks.
+    </div>
+    <div><b style="color:tomato">b.</b>
+        <b>Show a red surface</b> — the crab turns red
+        and blends into the coral.
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="panel">
+        <div class="panel-title">Recognition Window</div>
+
+        <video id="video" autoplay playsinline muted></video>
+
+        <div class="results">
+            <div class="result-row">
+                <span>Black</span>
+                <div class="bar">
+                    <div class="fill" id="blackFill">0%</div>
+                </div>
+            </div>
+
+            <div class="result-row">
+                <span>Red</span>
+                <div class="bar">
+                    <div class="fill" id="redFill">0%</div>
+                </div>
+            </div>
+
+            <div class="status" id="status">
+                Camera not started
+            </div>
+
+            <button onclick="startCamera()">Start Camera</button>
+            <button onclick="stopCamera()">Stop Camera</button>
+        </div>
+    </div>
+
+    <div class="ocean">
+        <div class="coral">♆</div>
+        <div class="seaweed">🌿</div>
+        <div class="rock"></div>
+
+        <div id="crab">
+            <svg viewBox="0 0 300 210"
+                 xmlns="http://www.w3.org/2000/svg">
+
+                <!-- Left claw -->
+                <path class="crab-part"
+                      d="M85 72 L60 49 L44 20 L70 30
+                         L88 48 L103 65 Z"/>
+                <path class="crab-part"
+                      d="M44 20 Q38 4 57 10 L83 29 L70 30 Z"/>
+
+                <!-- Right claw -->
+                <path class="crab-part"
+                      d="M215 72 L240 49 L256 20 L230 30
+                         L212 48 L197 65 Z"/>
+                <path class="crab-part"
+                      d="M256 20 Q262 4 243 10 L217 29 L230 30 Z"/>
+
+                <!-- Left legs -->
+                <path class="crab-part"
+                      d="M80 105 L42 85 L20 100 L45 116 L75 125 Z"/>
+                <path class="crab-part"
+                      d="M75 125 L35 125 L20 150 L43 145 L88 139 Z"/>
+                <path class="crab-part"
+                      d="M92 145 L65 160 L62 190 L80 180 L106 151 Z"/>
+
+                <!-- Right legs -->
+                <path class="crab-part"
+                      d="M220 105 L258 85 L280 100 L255 116 L225 125 Z"/>
+                <path class="crab-part"
+                      d="M225 125 L265 125 L280 150 L257 145 L212 139 Z"/>
+                <path class="crab-part"
+                      d="M208 145 L235 160 L238 190 L220 180 L194 151 Z"/>
+
+                <!-- Main shell -->
+                <path class="crab-part"
+                      d="M70 105
+                         Q70 62 150 62
+                         Q230 62 230 105
+                         Q225 151 150 155
+                         Q75 151 70 105 Z"/>
+
+                <!-- Lower shell -->
+                <path class="crab-part"
+                      d="M78 125 Q150 145 222 125
+                         Q205 166 150 166
+                         Q95 166 78 125 Z"/>
+
+                <!-- Eyes -->
+                <circle class="eye" cx="117" cy="92" r="9"/>
+                <circle class="eye" cx="183" cy="92" r="9"/>
+                <circle cx="119" cy="90" r="3" fill="white"/>
+                <circle cx="185" cy="90" r="3" fill="white"/>
+
+                <!-- Smile -->
+                <path class="mouth"
+                      d="M138 105 Q150 120 162 105"/>
+
+                <!-- Small side details -->
+                <circle cx="105" cy="108" r="4" fill="#60d9ed"
+                        stroke="#111" stroke-width="2"/>
+                <circle cx="195" cy="108" r="4" fill="#60d9ed"
+                        stroke="#111" stroke-width="2"/>
+            </svg>
+        </div>
+    </div>
+
+</div>
+
+<canvas id="canvas" hidden></canvas>
+
+<script>
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d", {
+    willReadFrequently: true
+});
+
+const crab = document.getElementById("crab");
+const blackFill = document.getElementById("blackFill");
+const redFill = document.getElementById("redFill");
+const statusText = document.getElementById("status");
+
+let stream = null;
+let timer = null;
+
+async function startCamera() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+            audio: false
+        });
+
+        video.srcObject = stream;
+        await video.play();
+
+        statusText.textContent = "Recognizing surface...";
+        clearInterval(timer);
+        timer = setInterval(detectColor, 250);
+    } catch (error) {
+        statusText.textContent =
+            "Camera access denied or unavailable.";
+    }
+}
+
+function stopCamera() {
+    clearInterval(timer);
+    timer = null;
+
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+
+    video.srcObject = null;
+    statusText.textContent = "Camera stopped";
+}
+
+function detectColor() {
+    if (!video.videoWidth || !video.videoHeight) return;
+
+    // Sample a smaller image for faster recognition.
+    canvas.width = 160;
+    canvas.height = 120;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const pixels = ctx.getImageData(
+        0, 0, canvas.width, canvas.height
+    ).data;
+
+    let black = 0;
+    let red = 0;
+    let total = 0;
+
+    for (let i = 0; i < pixels.length; i += 4) {
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+
+        // Approximate black pixel detection.
+        if (r < 65 && g < 65 && b < 65) {
+            black++;
+        }
+
+        // Approximate red pixel detection.
+        if (r > 120 && r > g * 1.5 && r > b * 1.4) {
+            red++;
+        }
+
+        total++;
+    }
+
+    const blackPercent = black / total * 100;
+    const redPercent = red / total * 100;
+
+    blackFill.style.width = blackPercent + "%";
+    blackFill.textContent = Math.round(blackPercent) + "%";
+
+    redFill.style.width = redPercent + "%";
+    redFill.textContent = Math.round(redPercent) + "%";
+
+    // Require a minimum amount of the detected color.
+    if (blackPercent > 10 && blackPercent > redPercent) {
+        crab.style.setProperty("--crab-color", "#252525");
+        statusText.textContent = "Black surface detected";
+    } else if (redPercent > 10 && redPercent > blackPercent) {
+        crab.style.setProperty("--crab-color", "#ff1010");
+        statusText.textContent = "Red surface detected";
+    } else {
+        statusText.textContent = "Searching for black or red...";
+    }
+}
+</script>
+
+</body>
+</html>
